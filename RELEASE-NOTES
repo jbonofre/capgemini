@@ -1,0 +1,7 @@
+1.0.0
+-----
+- Add configuration admin to store the roles
+- Add a sample cfg file
+- Populate the username in header and roles as subject (in order to be used later in the service)
+- Test if the interceptors are not already present before adding in the "in" phase
+- Add a CXF bus listener to add interceptors to new registered bus services

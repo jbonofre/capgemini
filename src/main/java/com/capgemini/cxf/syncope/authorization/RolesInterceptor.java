@@ -38,7 +38,6 @@ public class RolesInterceptor extends AbstractPhaseInterceptor<Message> {
     private final static Logger LOGGER = LoggerFactory.getLogger(RolesInterceptor.class);
 
     private String address;
-    private ConfigurationAdmin configurationAdmin;
 
     public RolesInterceptor() {
         super(Phase.PRE_INVOKE);
@@ -93,44 +92,6 @@ public class RolesInterceptor extends AbstractPhaseInterceptor<Message> {
         }
         subject.setReadOnly();
 
-        // get the bus ID
-        String busId = message.getExchange().getBus().getId();
-
-        try {
-            // validate the roles on the configuration
-            Configuration configuration = configurationAdmin.getConfiguration("com.capgemini.cxf.syncope.authorization");
-            if (configuration == null) {
-                LOGGER.warn("Configuration etc/com.capgemini.cxf.syncope.authorization.cfg is not found");
-            } else {
-                Dictionary dictionary = configuration.getProperties();
-                String rolesString = (String) dictionary.get(busId);
-                if (rolesString == null) {
-                    throw new Exception("Roles configuration not found for bus " + busId);
-                }
-                // split the roles by ,
-                String[] roles = rolesString.split(",");
-                if (roles.length < 1) {
-                    throw new Exception("No role authorization defined for bus " + busId);
-                }
-                // check if at least one role match
-                boolean match = false;
-                for (String role : roles) {
-                    for (String userRole : userRoles) {
-                        if (userRole.equals(role)) {
-                            match = true;
-                            break;
-                        }
-                    }
-                }
-                if (!match) {
-                    throw new Exception("User " + user.getUsername() + " has not role expected for CXF bus " + busId);
-                }
-            }
-        } catch (Exception ex) {
-            LOGGER.error(ex.getMessage(), ex);
-            throw new Fault(ex);
-        }
-
         message.put(SecurityContext.class, new DefaultSecurityContext(principal, subject));
     }
 
@@ -140,14 +101,6 @@ public class RolesInterceptor extends AbstractPhaseInterceptor<Message> {
 
     public String getAddress() {
         return address;
-    }
-
-    public void setConfigurationAdmin(ConfigurationAdmin configurationAdmin) {
-        this.configurationAdmin = configurationAdmin;
-    }
-
-    public ConfigurationAdmin getConfigurationAdmin() {
-        return this.configurationAdmin;
     }
 
 }

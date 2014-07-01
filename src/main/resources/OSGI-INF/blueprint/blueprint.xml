@@ -26,6 +26,7 @@
     <!-- authentication -->
     <bean id="syncopeValidator" class="com.capgemini.cxf.syncope.authentication.SyncopeValidator">
         <property name="address" value="http://localhost:8080/syncope/cxf/" />
+        <property name="configurationAdmin" ref="configurationAdmin" />
     </bean>
     <bean id="authenticationInterceptor" class="com.capgemini.cxf.syncope.authentication.BasicAuthInterceptor">
         <property name="validator" ref="syncopeValidator"/>
@@ -34,7 +35,6 @@
     <!-- authorization -->
     <bean id="authorizationInterceptor" class="com.capgemini.cxf.syncope.authorization.RolesInterceptor">
         <property name="address" value="http://localhost:8080/syncope/cxf/" />
-        <property name="configurationAdmin" ref="configurationAdmin" />
     </bean>
 
 </blueprint>

@@ -41,7 +41,7 @@ public class SyncopeValidator implements Validator {
         UsernameToken usernameToken = credential.getUsernametoken();
         String pwType = usernameToken.getPasswordType();
         LOGGER.debug("UsernameToken user {}", usernameToken.getName());
-        LOGGER.debug("UsernameToken password type {]", pwType);
+        LOGGER.debug("UsernameToken password type {}", pwType);
         if (!WSConstants.PASSWORD_TEXT.equals(pwType)) {
             LOGGER.error("Authentication failed - digest passwords are not accepted");
             throw new WSSecurityException(WSSecurityException.FAILED_AUTHENTICATION);
@@ -57,7 +57,7 @@ public class SyncopeValidator implements Validator {
         String authorizationHeader = "Basic " + Base64Utility.encode((usernameToken.getName() + ":" + usernameToken.getPassword()).getBytes());
 
         client.header("Authorization", authorizationHeader);
-        LOGGER.debug("Authenticating user {} to Syncope server");
+        LOGGER.debug("Authenticating user {} to Syncope server", usernameToken.getName());
 
         client = client.path("users/self");
         UserTO user;

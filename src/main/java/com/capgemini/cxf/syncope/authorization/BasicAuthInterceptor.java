@@ -1,4 +1,4 @@
-package com.capgemini.cxf.syncope.authentication;
+package com.capgemini.cxf.syncope.authorization;
 
 import org.apache.cxf.configuration.security.AuthorizationPolicy;
 import org.apache.cxf.helpers.DOMUtils;
@@ -20,7 +20,7 @@ import org.w3c.dom.Document;
 import java.security.Principal;
 
 /**
- * This interceptor just get a base authentication, and create a UsernameToken delegated to the Syncope interceptor
+ * This interceptor just get a base authorization, and create a UsernameToken delegated to the Syncope interceptor
  */
 public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 

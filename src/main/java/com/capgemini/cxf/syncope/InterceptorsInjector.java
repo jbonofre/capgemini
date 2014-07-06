@@ -2,6 +2,7 @@ package com.capgemini.cxf.syncope;
 
 import org.apache.cxf.Bus;
 import org.apache.cxf.interceptor.Interceptor;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,18 +16,24 @@ public class InterceptorsInjector {
     private final static Logger LOGGER = LoggerFactory.getLogger(InterceptorsInjector.class);
 
     private List<Bus> buses;
+    private ConfigurationAdmin configurationAdmin;
 
-    private Interceptor authenticationInterceptor;
-    private Interceptor authorizationInterceptor;
+    private Interceptor authenticator;
+    private Interceptor populator;
 
     public void inject() {
-        for (Bus bus : buses) {
-            //if (!bus.getInInterceptors().contains(authenticationInterceptor)) {
-                bus.getInInterceptors().add(authenticationInterceptor);
-            //}
-            //if (!bus.getInInterceptors().contains(authorizationInterceptor)) {
-                bus.getInInterceptors().add(authorizationInterceptor);
-            //}
+        InterceptorsUtil util = new InterceptorsUtil(configurationAdmin);
+        try {
+            for (Bus bus : buses) {
+                LOGGER.debug("Checking if CXF bus {} is defined in the configuration", bus.getId());
+                if (util.busDefined(bus.getId())) {
+                    LOGGER.debug("Injecting interceptors on CXF bus {}", bus.getId());
+                    bus.getInInterceptors().add(authenticator);
+                    bus.getInInterceptors().add(populator);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Injection failed", e);
         }
     }
 
@@ -38,20 +45,28 @@ public class InterceptorsInjector {
         return this.buses;
     }
 
-    public void setAuthenticationInterceptor(Interceptor authenticationInterceptor) {
-        this.authenticationInterceptor = authenticationInterceptor;
+    public ConfigurationAdmin getConfigurationAdmin() {
+        return this.configurationAdmin;
     }
 
-    public Interceptor getAuthenticationInterceptor() {
-        return this.authenticationInterceptor;
+    public void setConfigurationAdmin(ConfigurationAdmin configurationAdmin) {
+        this.configurationAdmin = configurationAdmin;
     }
 
-    public void setAuthorizationInterceptor(Interceptor authorizationInterceptor) {
-        this.authorizationInterceptor = authorizationInterceptor;
+    public void setAuthenticator(Interceptor authenticator) {
+        this.authenticator = authenticator;
     }
 
-    public Interceptor getAuthorizationInterceptor() {
-        return this.authorizationInterceptor;
+    public Interceptor getAuthenticator() {
+        return this.authenticator;
+    }
+
+    public void setPopulator(Interceptor populator) {
+        this.populator = populator;
+    }
+
+    public Interceptor getPopulator() {
+        return this.populator;
     }
 
 }

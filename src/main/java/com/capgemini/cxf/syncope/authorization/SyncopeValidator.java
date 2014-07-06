@@ -1,5 +1,6 @@
-package com.capgemini.cxf.syncope.authentication;
+package com.capgemini.cxf.syncope.authorization;
 
+import com.capgemini.cxf.syncope.InterceptorsUtil;
 import org.apache.cxf.common.util.Base64Utility;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.apache.cxf.message.Message;
@@ -29,7 +30,6 @@ public class SyncopeValidator implements Validator {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(SyncopeValidator.class);
 
-    private String address;
     private ConfigurationAdmin configurationAdmin;
 
     public Credential validate(Credential credential, RequestData data) throws WSSecurityException {
@@ -51,7 +51,18 @@ public class SyncopeValidator implements Validator {
             throw new WSSecurityException(WSSecurityException.FAILED_AUTHENTICATION);
         }
 
+        // create the util and retrieve Syncope address
+        InterceptorsUtil util = new InterceptorsUtil(configurationAdmin);
+        String address;
+        try {
+            address = util.getSyncopeAddress();
+        } catch (Exception e) {
+            LOGGER.error("Can't get Syncope address", e);
+            throw new WSSecurityException(WSSecurityException.FAILURE);
+        }
+
         // Send it off to Syncope for validation
+        LOGGER.debug("Use Syncope REST API from {}", address);
         WebClient client = WebClient.create(address, Collections.singletonList(new JacksonJsonProvider()));
 
         String authorizationHeader = "Basic " + Base64Utility.encode((usernameToken.getName() + ":" + usernameToken.getPassword()).getBytes());
@@ -64,20 +75,21 @@ public class SyncopeValidator implements Validator {
         try {
             user = client.accept("application/json").get(UserTO.class);
             if (user == null) {
+                LOGGER.error("User {} not authenticated on Syncope", usernameToken.getName());
                 throw new WSSecurityException(WSSecurityException.FAILED_AUTHENTICATION);
             }
         } catch (RuntimeException ex) {
-            LOGGER.debug(ex.getMessage(), ex);
+            LOGGER.error(ex.getMessage(), ex);
             throw new WSSecurityException(WSSecurityException.FAILED_AUTHENTICATION);
         }
 
         // get the bus ID
         Message message = (Message) data.getMsgContext();
         String busId = message.getExchange().getBus().getId();
+        LOGGER.debug("Processing bus ID {}", busId);
 
         try {
             // get the roles
-            // Now get the roles
             List<MembershipTO> membershipList = user.getMemberships();
             LinkedList<String> userRoles = new LinkedList<String>();
             for (MembershipTO membership : membershipList) {
@@ -85,34 +97,12 @@ public class SyncopeValidator implements Validator {
                 userRoles.add(roleName);
             }
 
-            // validate the roles on the configuration
-            Configuration configuration = configurationAdmin.getConfiguration("com.capgemini.cxf.syncope.authorization");
-            if (configuration == null) {
-                LOGGER.warn("Configuration etc/com.capgemini.cxf.syncope.authorization.cfg is not found");
+            // validate the roles
+            if (!util.authorize(busId, userRoles)) {
+                LOGGER.error("User {} has no role expected for CXF bus {}", user.getUsername(), busId);
+                throw new Exception("User " + user.getUsername() + " has no role expected for CXF bus " + busId);
             } else {
-                Dictionary dictionary = configuration.getProperties();
-                String rolesString = (String) dictionary.get(busId);
-                if (rolesString == null) {
-                    throw new Exception("Roles configuration not found for bus " + busId);
-                }
-                // split the roles by ,
-                String[] roles = rolesString.split(",");
-                if (roles.length < 1) {
-                    throw new Exception("No role authorization defined for bus " + busId);
-                }
-                // check if at least one role match
-                boolean match = false;
-                for (String role : roles) {
-                    for (String userRole : userRoles) {
-                        if (userRole.equals(role)) {
-                            match = true;
-                            break;
-                        }
-                    }
-                }
-                if (!match) {
-                    throw new Exception("User " + user.getUsername() + " has not role expected for CXF bus " + busId);
-                }
+                LOGGER.debug("User {} is authorized", user.getUsername());
             }
         } catch (Exception ex) {
             LOGGER.error(ex.getMessage(), ex);
@@ -120,14 +110,6 @@ public class SyncopeValidator implements Validator {
         }
 
         return credential;
-    }
-
-    public void setAddress(String newAddress) {
-        address = newAddress;
-    }
-
-    public String getAddress() {
-        return address;
     }
 
     public void setConfigurationAdmin(ConfigurationAdmin configurationAdmin) {

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.List;
 
 /**
@@ -38,8 +39,9 @@ public class InterceptorsUtil {
         ArrayList<String> buses = new ArrayList<String>();
         Dictionary properties = configuration.getProperties();
         if (properties != null) {
-            while (properties.keys().hasMoreElements()) {
-                String key = (String) properties.keys().nextElement();
+            Enumeration keys = properties.keys();
+            while (keys.hasMoreElements()) {
+                String key = (String) keys.nextElement();
                 LOGGER.debug("Adding CXF bus {}", key);
                 buses.add(key);
             }
@@ -53,7 +55,7 @@ public class InterceptorsUtil {
      * @param busId the CXF bus ID (or prefix string) as defined in the configuration.
      * @return the list of roles defined for the bus.
      */
-    public String[] getBusRoles(String busId) throws Exception {
+    private String[] getBusRoles(String busId) throws Exception {
         Configuration configuration = configurationAdmin.getConfiguration(CONFIG_PID);
         if (configuration == null) {
             LOGGER.error("Configuration {} not found", CONFIG_PID);
@@ -61,8 +63,9 @@ public class InterceptorsUtil {
         }
         Dictionary properties = configuration.getProperties();
         if (properties != null) {
-            while (properties.keys().hasMoreElements()) {
-                String key = (String) properties.keys().nextElement();
+            Enumeration keys = properties.keys();
+            while (keys.hasMoreElements()) {
+                String key = (String) keys.nextElement();
                 LOGGER.debug("Checking if bus {} starts with {} ...", busId, key);
                 if (busId.startsWith(key)) {
                     String roles = (String) properties.get(key);

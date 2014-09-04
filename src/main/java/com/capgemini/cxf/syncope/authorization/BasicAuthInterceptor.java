@@ -72,7 +72,7 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
             Conduit conduit = exchange.getDestination().getBackChannel(message, null, target);
             exchange.setConduit(conduit);
             conduit.prepare(outMessage);
-            OutputStream os = message.getContent(OutputStream.class);
+            OutputStream os = outMessage.getContent(OutputStream.class);
             os.flush();
             os.close();
         } catch (Exception e) {

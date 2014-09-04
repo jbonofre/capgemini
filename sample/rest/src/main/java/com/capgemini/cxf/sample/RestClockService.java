@@ -9,7 +9,6 @@ public class RestClockService {
 
     @GET
     @Path("/current")
-    @Produces("text/plain")
     public String currentTime() throws Exception {
         return "Time " + System.currentTimeMillis();
     }

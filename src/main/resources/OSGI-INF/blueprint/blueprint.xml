@@ -7,7 +7,7 @@
     <reference id="configurationAdmin" interface="org.osgi.service.cm.ConfigurationAdmin"/>
 
     <!-- interceptor injector for existing CXF buses -->
-    <bean class="com.capgemini.cxf.syncope.InterceptorsInjector" init-method="inject">
+    <bean id="injector" class="com.capgemini.cxf.syncope.InterceptorsInjector" init-method="inject">
         <property name="buses" ref="buses" />
         <property name="configurationAdmin" ref="configurationAdmin" />
         <property name="authenticator" ref="authenticator"/>
@@ -15,7 +15,15 @@
     </bean>
 
     <!-- CXF bus services -->
-    <reference-list id="buses" interface="org.apache.cxf.Bus" filter="(cxf.bus.id=*)" availability="optional" />
+    <reference-list id="buses" interface="org.apache.cxf.Bus" filter="(cxf.bus.id=*)" availability="optional">
+        <reference-listener bind-method="busRegistered">
+            <bean class="com.capgemini.cxf.syncope.CxfListener">
+                <property name="configurationAdmin" ref="configurationAdmin"/>
+                <property name="authenticator" ref="authenticator"/>
+                <property name="populator" ref="populator"/>
+            </bean>
+        </reference-listener>
+    </reference-list>
 
     <!-- authorization -->
     <bean id="syncopeValidator" class="com.capgemini.cxf.syncope.authorization.SyncopeValidator">

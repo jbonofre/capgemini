@@ -28,8 +28,12 @@ public class InterceptorsInjector {
                 LOGGER.debug("Checking if CXF bus {} is defined in the configuration", bus.getId());
                 if (util.busDefined(bus.getId())) {
                     LOGGER.debug("Injecting interceptors on CXF bus {}", bus.getId());
-                    bus.getInInterceptors().add(authenticator);
-                    bus.getInInterceptors().add(populator);
+                    if (!bus.getInInterceptors().contains(authenticator)) {
+                        bus.getInInterceptors().add(authenticator);
+                    }
+                    if (!bus.getInInterceptors().contains(populator)) {
+                        bus.getInInterceptors().add(populator);
+                    }
                 }
             }
         } catch (Exception e) {

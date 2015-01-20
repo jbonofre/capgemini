@@ -98,6 +98,8 @@ public class SubjectPopulator extends AbstractPhaseInterceptor<Message> {
 
         // put principal and subject (with the roles) in message SecurityContext
         message.put(SecurityContext.class, new DefaultSecurityContext(principal, subject));
+        // put principal and subject (with the roles) in message DefaultSecurityContext
+        message.put(DefaultSecurityContext.class, new DefaultSecurityContext(principal, subject));
     }
 
     public void setConfigurationAdmin(ConfigurationAdmin configurationAdmin) {

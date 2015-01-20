@@ -1,5 +1,6 @@
-1.0.0
+1.0.0-SNAPSHOT
 -----
+- Populate the DefaultSecurityContext on the message in addition of the SecurityContext
 - Add configuration admin to store the roles
 - Add a sample cfg file
 - Populate the username in header and roles as subject (in order to be used later in the service)

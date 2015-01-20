@@ -96,8 +96,6 @@ public class SubjectPopulator extends AbstractPhaseInterceptor<Message> {
         }
         subject.setReadOnly();
 
-        // put principal and subject (with the roles) in message SecurityContext
-        message.put(SecurityContext.class, new DefaultSecurityContext(principal, subject));
         // put principal and subject (with the roles) in message DefaultSecurityContext
         message.put(DefaultSecurityContext.class, new DefaultSecurityContext(principal, subject));
     }

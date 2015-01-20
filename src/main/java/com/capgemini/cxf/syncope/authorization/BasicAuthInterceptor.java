@@ -1,9 +1,14 @@
 package com.capgemini.cxf.syncope.authorization;
 
+import com.capgemini.cxf.syncope.InterceptorsUtil;
+import org.apache.cxf.common.security.SimpleGroup;
+import org.apache.cxf.common.util.Base64Utility;
 import org.apache.cxf.configuration.security.AuthorizationPolicy;
 import org.apache.cxf.endpoint.Endpoint;
 import org.apache.cxf.helpers.DOMUtils;
 import org.apache.cxf.interceptor.Fault;
+import org.apache.cxf.interceptor.security.DefaultSecurityContext;
+import org.apache.cxf.jaxrs.client.WebClient;
 import org.apache.cxf.message.Exchange;
 import org.apache.cxf.message.Message;
 import org.apache.cxf.message.MessageImpl;
@@ -13,22 +18,25 @@ import org.apache.cxf.security.SecurityContext;
 import org.apache.cxf.transport.Conduit;
 import org.apache.cxf.transport.http.Headers;
 import org.apache.cxf.ws.addressing.EndpointReferenceType;
+import org.apache.syncope.common.to.MembershipTO;
+import org.apache.syncope.common.to.UserTO;
 import org.apache.ws.security.WSConstants;
 import org.apache.ws.security.WSUsernameTokenPrincipal;
 import org.apache.ws.security.handler.RequestData;
 import org.apache.ws.security.message.token.UsernameToken;
 import org.apache.ws.security.validate.Credential;
 import org.apache.ws.security.validate.Validator;
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 
+import javax.security.auth.Subject;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This interceptor just get a base authorization, and create a UsernameToken delegated to the Syncope interceptor
@@ -36,6 +44,8 @@ import java.util.Map;
 public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 
     private final Logger LOGGER = LoggerFactory.getLogger(BasicAuthInterceptor.class);
+
+    private ConfigurationAdmin configurationAdmin;
 
     private Validator validator;
 
@@ -116,7 +126,51 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
                 p = new WSUsernameTokenPrincipal(policy.getUserName(), false);
                 ((WSUsernameTokenPrincipal)p).setPassword(policy.getPassword());
             }
-            message.put(SecurityContext.class, createSecurityContext(p));
+
+            // create the util and retrieve Syncope address
+            InterceptorsUtil util = new InterceptorsUtil(configurationAdmin);
+            String address;
+            try {
+                address = util.getSyncopeAddress();
+            } catch (Exception e) {
+                LOGGER.error("Can't get Syncope address", e);
+                throw new Fault(e);
+            }
+
+            // Read the user from Syncope and get the roles
+            WebClient client = WebClient.create(address, Collections.singletonList(new JacksonJsonProvider()));
+
+            String authorizationHeader = "Basic " + Base64Utility.encode((token.getName() + ":" + token.getPassword()).getBytes());
+
+            client.header("Authorization", authorizationHeader);
+
+            client = client.path("users/self");
+            UserTO user = null;
+            try {
+                user = client.accept("application/json").get(UserTO.class);
+                if (user == null) {
+                    Exception exception = new Exception("Authentication failed");
+                    throw new Fault(exception);
+                }
+            } catch (RuntimeException ex) {
+                LOGGER.error(ex.getMessage(), ex);
+                throw new Fault(ex);
+            }
+
+            // Now get the roles
+            List<MembershipTO> membershipList = user.getMemberships();
+            LinkedList<String> userRoles = new LinkedList<String>();
+            Subject subject = new Subject();
+            subject.getPrincipals().add(p);
+            for (MembershipTO membership : membershipList) {
+                String roleName = membership.getRoleName();
+                userRoles.add(roleName);
+                subject.getPrincipals().add(new SimpleGroup(roleName, token.getName()));
+            }
+            subject.setReadOnly();
+
+            // put principal and subject (with the roles) in message DefaultSecurityContext
+            message.put(DefaultSecurityContext.class, new DefaultSecurityContext(p, subject));
 
         } catch (Exception ex) {
             throw new Fault(ex);
@@ -148,6 +202,14 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 
     public void setValidator(Validator validator) {
         this.validator = validator;
+    }
+
+    public ConfigurationAdmin getConfigurationAdmin() {
+        return configurationAdmin;
+    }
+
+    public void setConfigurationAdmin(ConfigurationAdmin configurationAdmin) {
+        this.configurationAdmin = configurationAdmin;
     }
 
 }

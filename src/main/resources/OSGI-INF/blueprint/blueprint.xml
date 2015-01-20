@@ -11,7 +11,6 @@
         <property name="buses" ref="buses" />
         <property name="configurationAdmin" ref="configurationAdmin" />
         <property name="authenticator" ref="authenticator"/>
-        <property name="populator" ref="populator"/>
     </bean>
 
     <!-- CXF bus services -->
@@ -31,11 +30,7 @@
     </bean>
     <bean id="authenticator" class="com.capgemini.cxf.syncope.authorization.BasicAuthInterceptor">
         <property name="validator" ref="syncopeValidator"/>
-    </bean>
-
-    <!-- subject populator -->
-    <bean id="populator" class="com.capgemini.cxf.syncope.authorization.SubjectPopulator">
-        <property name="configurationAdmin" ref="configurationAdmin" />
+        <property name="configurationAdmin" ref="configurationAdmin"/>
     </bean>
 
 </blueprint>

@@ -19,7 +19,6 @@ public class InterceptorsInjector {
     private ConfigurationAdmin configurationAdmin;
 
     private Interceptor authenticator;
-    private Interceptor populator;
 
     public void inject() {
         InterceptorsUtil util = new InterceptorsUtil(configurationAdmin);
@@ -27,12 +26,9 @@ public class InterceptorsInjector {
             for (Bus bus : buses) {
                 LOGGER.debug("Checking if CXF bus {} is defined in the configuration", bus.getId());
                 if (util.busDefined(bus.getId())) {
-                    LOGGER.debug("Injecting interceptors on CXF bus {}", bus.getId());
+                    LOGGER.debug("Injecting interceptor on CXF bus {}", bus.getId());
                     if (!bus.getInInterceptors().contains(authenticator)) {
                         bus.getInInterceptors().add(authenticator);
-                    }
-                    if (!bus.getInInterceptors().contains(populator)) {
-                        bus.getInInterceptors().add(populator);
                     }
                 }
             }
@@ -63,14 +59,6 @@ public class InterceptorsInjector {
 
     public Interceptor getAuthenticator() {
         return this.authenticator;
-    }
-
-    public void setPopulator(Interceptor populator) {
-        this.populator = populator;
-    }
-
-    public Interceptor getPopulator() {
-        return this.populator;
     }
 
 }

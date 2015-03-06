@@ -19,7 +19,6 @@
             <bean class="com.capgemini.cxf.syncope.CxfListener">
                 <property name="configurationAdmin" ref="configurationAdmin"/>
                 <property name="authenticator" ref="authenticator"/>
-                <property name="populator" ref="populator"/>
             </bean>
         </reference-listener>
     </reference-list>

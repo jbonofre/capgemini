@@ -13,7 +13,6 @@ public class CxfListener {
     private ConfigurationAdmin configurationAdmin;
 
     private Interceptor authenticator;
-    private Interceptor populator;
 
     public void busRegistered(Bus bus) {
         InterceptorsUtil util = new InterceptorsUtil(configurationAdmin);
@@ -23,9 +22,6 @@ public class CxfListener {
                 LOGGER.debug("Injecting interceptors on CXF bus {}", bus.getId());
                 if (!bus.getInInterceptors().contains(authenticator)) {
                     bus.getInInterceptors().add(authenticator);
-                }
-                if (!bus.getInInterceptors().contains(populator)) {
-                    bus.getInInterceptors().add(populator);
                 }
             }
         } catch (Exception e) {
@@ -39,10 +35,6 @@ public class CxfListener {
 
     public void setAuthenticator(Interceptor authenticator) {
         this.authenticator = authenticator;
-    }
-
-    public void setPopulator(Interceptor populator) {
-        this.populator = populator;
     }
 
 }

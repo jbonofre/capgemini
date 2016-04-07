@@ -84,7 +84,7 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
             conduit.prepare(outMessage);
             OutputStream os = outMessage.getContent(OutputStream.class);
             os.flush();
-            os.close();
+            //os.close();
         } catch (Exception e) {
             LOGGER.error("Can't prepare response", e);
         }

@@ -93,6 +93,8 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
     public void handleMessage(Message message) throws Fault {
         AuthorizationPolicy policy = message.get(AuthorizationPolicy.class);
 
+	LOGGER.debug("Authorization policy: {}", policy);
+
         if (policy == null || policy.getUserName() == null || policy.getPassword() == null) {
             LOGGER.warn("Authorization policy is not present, creating 401 response");
             // no authentication provided, send error response
@@ -103,8 +105,10 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
         try {
             LOGGER.info("Get authorization policy, converting to username token");
 
+            LOGGER.debug("Converting policy to token");
             UsernameToken token = convertPolicyToToken(policy);
             Credential credential = new Credential();
+            LOGGER.debug("Token: {}", token);
             credential.setUsernametoken(token);
 
             RequestData data = new RequestData();
@@ -112,6 +116,7 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
 
             LOGGER.info("Call the Syncope validator");
             try {
+                LOGGER.debug("Validate credential {} on data {}", credential, data);
                 credential = validator.validate(credential, data);
             } catch (Exception e) {
                 LOGGER.warn("Syncope authentication failed");

@@ -5,6 +5,7 @@ import org.apache.cxf.common.security.SimpleGroup;
 import org.apache.cxf.common.util.Base64Utility;
 import org.apache.cxf.configuration.security.AuthorizationPolicy;
 import org.apache.cxf.endpoint.Endpoint;
+import org.apache.cxf.helpers.CastUtils;
 import org.apache.cxf.helpers.DOMUtils;
 import org.apache.cxf.interceptor.Fault;
 import org.apache.cxf.interceptor.security.DefaultSecurityContext;
@@ -175,6 +176,13 @@ public class BasicAuthInterceptor extends AbstractPhaseInterceptor<Message> {
             subject.setReadOnly();
 
             // put principal and subject (with the roles) in message DefaultSecurityContext
+            // new style: protocol headers
+            Map<String, List<String>> headers = CastUtils.cast((Map<?, ?>)message.get(Message.PROTOCOL_HEADERS));
+            LinkedList<String> temp = new LinkedList<String>();
+            temp.add(p.getName());
+            headers.put("User", temp);
+            headers.put("Roles", userRoles);
+            // old style
             message.put(DefaultSecurityContext.class, new DefaultSecurityContext(p, subject));
 
         } catch (Exception ex) {
